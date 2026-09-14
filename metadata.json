@@ -1,0 +1,6 @@
+{
+  "name": "School Adventure",
+  "description": "Game platformer siswa sekolah: kumpulkan buku pelajaran, hindari batu api, dan raih prestasi tertinggi!",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
