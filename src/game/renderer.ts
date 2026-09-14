@@ -196,30 +196,44 @@ export class GameRenderer {
       ctx.fill();
 
       // School Flagpole with Fluttering Flag
+      const poleX = Math.round(bx + 380);
       ctx.fillStyle = '#64748b';
-      ctx.fillRect(bx + 380, 240, 5, 240);
+      ctx.fillRect(poleX, 240, 5, 240);
       // Gold ball on top
       ctx.fillStyle = '#eab308';
       ctx.beginPath();
-      ctx.arc(bx + 382.5, 238, 5, 0, Math.PI * 2);
+      ctx.arc(poleX + 2.5, 238, 5, 0, Math.PI * 2);
       ctx.fill();
 
-      // Flag (Animated flutter)
-      const flagFlutter = Math.sin(time * 5 + bx) * 4;
-      ctx.fillStyle = '#ef4444'; // Red top
+      // Flag (Animated flutter) - rounded coordinates and clean path to prevent sub-pixel seam lines
+      const flagFlutter = Math.round(Math.sin(time * 5 + bx) * 4);
+      const flagLeft = poleX + 5;
+      const flagRight = flagLeft + 40;
+      const topY1 = 245;
+      const topY2 = 245 + flagFlutter;
+      const midY1 = 260;
+      const midY2 = 260 + flagFlutter;
+      const botY1 = 275;
+      const botY2 = 275 + flagFlutter;
+
+      // Red top half
+      ctx.fillStyle = '#ef4444';
       ctx.beginPath();
-      ctx.moveTo(bx + 385, 245);
-      ctx.lineTo(bx + 425, 245 + flagFlutter);
-      ctx.lineTo(bx + 425, 260 + flagFlutter);
-      ctx.lineTo(bx + 385, 260);
+      ctx.moveTo(flagLeft, topY1);
+      ctx.lineTo(flagRight, topY2);
+      ctx.lineTo(flagRight, midY2);
+      ctx.lineTo(flagLeft, midY1);
+      ctx.closePath();
       ctx.fill();
 
-      ctx.fillStyle = '#ffffff'; // White bottom
+      // White bottom half (overlaps mid seam by 0.5px to eliminate sub-pixel rendering gaps/lines)
+      ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.moveTo(bx + 385, 260);
-      ctx.lineTo(bx + 425, 260 + flagFlutter);
-      ctx.lineTo(bx + 425, 275 + flagFlutter);
-      ctx.lineTo(bx + 385, 275);
+      ctx.moveTo(flagLeft, midY1 - 0.5);
+      ctx.lineTo(flagRight, midY2 - 0.5);
+      ctx.lineTo(flagRight, botY2);
+      ctx.lineTo(flagLeft, botY1);
+      ctx.closePath();
       ctx.fill();
     }
     ctx.restore();
@@ -275,20 +289,25 @@ export class GameRenderer {
         ctx.fillRect(p.x + p.width - 18, p.y + 22, 6, 8);
       } else if (p.type === 'bookshelf') {
         // Library Bookshelf Platform
+        const px = Math.round(p.x);
+        const py = Math.round(p.y);
+        const pw = Math.round(p.width);
+        const ph = Math.round(p.height);
+
         ctx.fillStyle = '#7c2d12';
-        ctx.fillRect(p.x, p.y, p.width, p.height);
+        ctx.fillRect(px, py, pw, ph);
 
         // Colorful book spines on the shelf
         const colors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
-        let curX = p.x + 6;
+        let curX = px + 6;
         let colorIdx = 0;
-        while (curX < p.x + p.width - 12) {
+        while (curX < px + pw - 12) {
           const bw = 10 + (colorIdx % 3) * 2;
           ctx.fillStyle = colors[colorIdx % colors.length];
-          ctx.fillRect(curX, p.y + 3, bw, p.height - 6);
-          // Book title line
+          ctx.fillRect(curX, py + 3, bw, ph - 6);
+          // Book title line (clear integer alignment)
           ctx.fillStyle = 'rgba(255,255,255,0.7)';
-          ctx.fillRect(curX + 2, p.y + 8, bw - 4, 2);
+          ctx.fillRect(curX + 2, py + 8, bw - 4, 2);
           curX += bw + 3;
           colorIdx++;
         }
@@ -333,8 +352,10 @@ export class GameRenderer {
       if (b.collected) return;
 
       const hover = Math.sin(time * 3 + b.bounceOffset) * 6;
-      const x = b.x;
-      const y = b.y + hover;
+      const x = Math.round(b.x);
+      const y = Math.round(b.y + hover);
+      const bw = Math.round(b.width);
+      const bh = Math.round(b.height);
 
       // Glow halo for golden and special books
       if (b.subject === 'golden') {
@@ -343,7 +364,7 @@ export class GameRenderer {
         ctx.shadowBlur = 14;
         ctx.fillStyle = 'rgba(250, 204, 21, 0.4)';
         ctx.beginPath();
-        ctx.arc(x + b.width / 2, y + b.height / 2, 22, 0, Math.PI * 2);
+        ctx.arc(x + bw / 2, y + bh / 2, 22, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
       }
@@ -352,30 +373,44 @@ export class GameRenderer {
       // Book Base Cover
       let coverColor = '#2563eb'; // math
       if (b.subject === 'science') coverColor = '#059669';
-      if (b.subject === 'art') coverColor = '#9333ea';
+      if (b.subject === 'art') coverColor = '#9333ea'; // Buku Ungu (Seni Rupa & Desain Kreatif)
       if (b.subject === 'history') coverColor = '#ea580c';
       if (b.subject === 'golden') coverColor = '#ca8a04';
 
-      // Book Drop Shadow
+      // Book Drop Shadow (integer aligned)
       ctx.fillStyle = 'rgba(0,0,0,0.18)';
-      ctx.fillRect(x + 4, y + 4, b.width, b.height);
+      ctx.fillRect(x + 3, y + 3, bw, bh);
 
-      // Book Spine & Cover
+      // Book Spine & Cover with robust cross-browser rounded corners
       ctx.fillStyle = coverColor;
       ctx.beginPath();
-      ctx.roundRect(x, y, b.width, b.height, 4);
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(x, y, bw, bh, 4);
+      } else {
+        const radius = 4;
+        ctx.moveTo(x + radius, y);
+        ctx.lineTo(x + bw - radius, y);
+        ctx.quadraticCurveTo(x + bw, y, x + bw, y + radius);
+        ctx.lineTo(x + bw, y + bh - radius);
+        ctx.quadraticCurveTo(x + bw, y + bh, x + bw - radius, y + bh);
+        ctx.lineTo(x + radius, y + bh);
+        ctx.quadraticCurveTo(x, y + bh, x, y + bh - radius);
+        ctx.lineTo(x, y + radius);
+        ctx.quadraticCurveTo(x, y, x + radius, y);
+        ctx.closePath();
+      }
       ctx.fill();
 
       // Pages on right side
       ctx.fillStyle = '#f8fafc';
-      ctx.fillRect(x + b.width - 6, y + 3, 4, b.height - 6);
+      ctx.fillRect(x + bw - 6, y + 3, 4, bh - 6);
 
       // Bookmark ribbon hanging from bottom
       ctx.fillStyle = '#ef4444';
       ctx.beginPath();
-      ctx.moveTo(x + b.width / 2 - 3, y + b.height);
-      ctx.lineTo(x + b.width / 2 + 3, y + b.height);
-      ctx.lineTo(x + b.width / 2, y + b.height + 7);
+      ctx.moveTo(x + Math.floor(bw / 2) - 3, y + bh);
+      ctx.lineTo(x + Math.floor(bw / 2) + 3, y + bh);
+      ctx.lineTo(x + Math.floor(bw / 2), y + bh + 7);
       ctx.closePath();
       ctx.fill();
 
@@ -386,20 +421,28 @@ export class GameRenderer {
         ctx.fillStyle = '#fef08a';
         ctx.font = 'bold 16px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('★', x + b.width / 2 - 2, y + b.height / 2 + 5);
+        ctx.fillText('★', x + bw / 2 - 2, y + bh / 2 + 5);
+      } else if (b.subject === 'art') {
+        // Palette / diamond clean emblem for purple art book without awkward line artifacts
+        ctx.fillStyle = '#f3e8ff';
+        ctx.beginPath();
+        ctx.arc(x + 10, y + 12, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.fillRect(x + 5, y + 18, bw - 14, 2);
       } else {
-        // Book stripes
-        ctx.fillRect(x + 4, y + 8, b.width - 12, 3);
-        ctx.fillRect(x + 4, y + 14, b.width - 14, 2);
+        // Book clean title stripes
+        ctx.fillRect(x + 4, y + 9, bw - 12, 3);
+        ctx.fillRect(x + 4, y + 16, bw - 14, 2);
       }
 
       // Sparkle particle around book
       const sparkleOffset = (time * 2 + b.bounceOffset) % 1;
-      ctx.fillStyle = b.subject === 'golden' ? '#fef08a' : '#ffffff';
+      ctx.fillStyle = b.subject === 'golden' ? '#fef08a' : (b.subject === 'art' ? '#e9d5ff' : '#ffffff');
       ctx.beginPath();
       ctx.arc(
-        x + Math.sin(time * 4) * 16 + b.width / 2,
-        y - 4 + sparkleOffset * 6,
+        Math.round(x + Math.sin(time * 4) * 16 + bw / 2),
+        Math.round(y - 4 + sparkleOffset * 6),
         2,
         0,
         Math.PI * 2
