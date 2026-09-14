@@ -28,19 +28,24 @@ export class GameRenderer {
     time: number
   ) {
     const ctx = this.ctx;
+    // Always dynamically synchronize canvas dimensions to prevent clearing / clipping mismatch
+    this.width = ctx.canvas.width || 960;
+    this.height = ctx.canvas.height || 540;
+
+    // Fully clear entire canvas buffer
     ctx.clearRect(0, 0, this.width, this.height);
 
-    // 1. Render Parallax School Background
+    // 1. Render Parallax Sky, Sun, Clouds & Distant Hills
     this.drawBackground(cameraX, levelWidth, time);
 
-    // Save context for camera translation
+    // Save context for world camera translation
     ctx.save();
     ctx.translate(-cameraX, 0);
 
-    // 1.5. Render School Campus Environment (Fence, Trees, Ceremony Flagpoles in Courtyard)
+    // 1.5. Render World School Campus Architecture & Grounds (Clean, non-repeating world elements)
     this.drawSchoolEnvironment(levelWidth, time);
 
-    // 2. Render Platforms (Ground, Desks, Bookshelves, Floating Grass)
+    // 2. Render Platforms (Ground, Desks, Bookshelves, Floating Grass, Bricks)
     this.drawPlatforms(platforms);
 
     // 3. Render Finish Gate
@@ -70,47 +75,44 @@ export class GameRenderer {
     // 1. Sky Gradient: Bright, refreshing morning school sky
     const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
     skyGrad.addColorStop(0, '#38bdf8');   // Vivid clear morning blue
-    skyGrad.addColorStop(0.5, '#bae6fd');  // Soft light sky
-    skyGrad.addColorStop(0.85, '#fef08a'); // Warm sunrise horizon glow
+    skyGrad.addColorStop(0.55, '#bae6fd'); // Soft pale blue
+    skyGrad.addColorStop(0.88, '#fef08a'); // Warm sunrise glow
     skyGrad.addColorStop(1, '#fde68a');
     ctx.fillStyle = skyGrad;
     ctx.fillRect(0, 0, w, h);
 
-    // 2. Distant Morning Sun with glowing atmospheric corona
+    // 2. Distant Morning Sun with soft glowing corona
     ctx.save();
     const sunX = w * 0.85 - ((cameraX * 0.03) % (w + 150));
-    ctx.fillStyle = 'rgba(254, 240, 138, 0.9)';
+    ctx.fillStyle = 'rgba(254, 240, 138, 0.95)';
     ctx.beginPath();
-    ctx.arc(sunX, 85, 36, 0, Math.PI * 2);
+    ctx.arc(sunX, 80, 36, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = 'rgba(254, 240, 138, 0.25)';
+    ctx.fillStyle = 'rgba(254, 240, 138, 0.22)';
     ctx.beginPath();
-    ctx.arc(sunX, 85, 68, 0, Math.PI * 2);
+    ctx.arc(sunX, 80, 68, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
 
-    // 3. Floating Clouds (Parallax 0.12)
+    // 3. Floating Clouds (Parallax 0.10)
     this.drawClouds(cameraX, time);
 
-    // 4. Distant Mountains (Parallax 0.10)
-    this.drawDistantMountains(cameraX);
-
-    // 5. Distant School Campus Panorama (Parallax 0.20 - sits comfortably low on horizon)
-    this.drawDistantCampus(cameraX, time);
+    // 4. Distant Rolling Hills & Gentle Horizon (Parallax 0.12 - sits softly on bottom horizon)
+    this.drawDistantHills(cameraX);
   }
 
   private drawClouds(cameraX: number, time: number) {
     const ctx = this.ctx;
     const clouds = [
-      { base: 60, y: 55, scale: 1.1, speed: 10 },
-      { base: 360, y: 100, scale: 0.85, speed: 7 },
-      { base: 680, y: 65, scale: 1.25, speed: 9 },
-      { base: 1050, y: 90, scale: 0.9, speed: 12 },
+      { base: 60, y: 55, scale: 1.1, speed: 8 },
+      { base: 360, y: 95, scale: 0.85, speed: 6 },
+      { base: 680, y: 65, scale: 1.25, speed: 7 },
+      { base: 1050, y: 85, scale: 0.9, speed: 9 },
     ];
 
     ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
     clouds.forEach(c => {
-      const x = ((c.base + time * c.speed - cameraX * 0.10) % (this.width + 400)) - 100;
+      const x = ((c.base + time * c.speed - cameraX * 0.08) % (this.width + 400)) - 100;
       ctx.beginPath();
       ctx.arc(x, c.y, 24 * c.scale, 0, Math.PI * 2);
       ctx.arc(x + 22 * c.scale, c.y - 10 * c.scale, 30 * c.scale, 0, Math.PI * 2);
@@ -120,117 +122,211 @@ export class GameRenderer {
     });
   }
 
-  // Distant Mountain Ridges (Layer 1: far background, low on horizon)
-  private drawDistantMountains(cameraX: number) {
+  // Distant Rolling Hills (Parallax 0.12)
+  private drawDistantHills(cameraX: number) {
     const ctx = this.ctx;
     const w = this.width;
     ctx.save();
 
-    // Soft teal rolling hills sitting between y = 420 and y = 480
-    const offset = -(cameraX * 0.10) % 600;
-    ctx.fillStyle = 'rgba(153, 246, 228, 0.55)'; // Soft pastel teal/mint
-    for (let x = -200 + offset; x < w + 600; x += 300) {
+    // Back Hill Silhouette (Soft cyan-teal)
+    const offset1 = -(cameraX * 0.08) % 600;
+    ctx.fillStyle = 'rgba(153, 246, 228, 0.45)';
+    for (let x = -200 + offset1; x < w + 600; x += 300) {
       ctx.beginPath();
       ctx.moveTo(x, 480);
-      ctx.quadraticCurveTo(x + 150, 390, x + 300, 480);
+      ctx.quadraticCurveTo(x + 150, 395, x + 300, 480);
       ctx.fill();
     }
 
-    const offset2 = -(cameraX * 0.14) % 700;
-    ctx.fillStyle = 'rgba(110, 231, 183, 0.45)'; // Soft emerald ridge
+    // Fore Hill Silhouette (Soft emerald)
+    const offset2 = -(cameraX * 0.12) % 700;
+    ctx.fillStyle = 'rgba(110, 231, 183, 0.40)';
     for (let x = -250 + offset2; x < w + 700; x += 350) {
       ctx.beginPath();
       ctx.moveTo(x, 480);
-      ctx.quadraticCurveTo(x + 175, 410, x + 350, 480);
+      ctx.quadraticCurveTo(x + 175, 415, x + 350, 480);
       ctx.fill();
     }
 
     ctx.restore();
   }
 
-  // Distant School Campus Panorama (Layer 2: distant horizon silhouette, strictly below y = 370)
-  private drawDistantCampus(cameraX: number, time: number) {
-    const ctx = this.ctx;
-    const w = this.width;
-    const loopWidth = 1100;
-    // Seamless positive modulo wrapping
-    const rawOffset = -(cameraX * 0.18);
-    const campusOffset = ((rawOffset % loopWidth) + loopWidth) % loopWidth - 400;
-
-    ctx.save();
-    // Atmospheric perspective: soft opacity so distant buildings never compete with foreground
-    ctx.globalAlpha = 0.55;
-
-    for (let bx = campusOffset; bx < w + 600; bx += 550) {
-      // 1. Distant Classroom Wings (low profile, sits at y = 410 to 480)
-      ctx.fillStyle = '#e2e8f0'; // Clean pale slate
-      ctx.fillRect(bx, 410, 220, 70);
-
-      // Classroom Wing Red Tile Roof
-      ctx.fillStyle = '#f87171'; // Soft terracotta/red
-      ctx.beginPath();
-      ctx.moveTo(bx - 10, 410);
-      ctx.lineTo(bx + 110, 380);
-      ctx.lineTo(bx + 230, 410);
-      ctx.closePath();
-      ctx.fill();
-
-      // Soft Distant Classroom Windows
-      ctx.fillStyle = '#93c5fd';
-      for (let col = 0; col < 6; col++) {
-        ctx.fillRect(bx + 16 + col * 32, 424, 18, 14);
-      }
-
-      // 2. Distant Central Bell / Clock Tower (proportional, peaks at y = 345 - far below mid-air platforms)
-      ctx.fillStyle = '#cbd5e1';
-      ctx.fillRect(bx + 85, 360, 50, 50);
-
-      // Tower triangular roof
-      ctx.fillStyle = '#dc2626';
-      ctx.beginPath();
-      ctx.moveTo(bx + 78, 360);
-      ctx.lineTo(bx + 110, 325);
-      ctx.lineTo(bx + 142, 360);
-      ctx.closePath();
-      ctx.fill();
-
-      // Small distant clock face
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(bx + 110, 382, 10, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#475569';
-      ctx.lineWidth = 1.2;
-      ctx.stroke();
-
-      // Clock hands
-      ctx.beginPath();
-      ctx.moveTo(bx + 110, 382);
-      ctx.lineTo(bx + 110, 375);
-      ctx.moveTo(bx + 110, 382);
-      ctx.lineTo(bx + 115, 382);
-      ctx.stroke();
-
-      // 3. Distant Green Campus Trees flanking the building
-      ctx.fillStyle = '#4ade80';
-      ctx.beginPath();
-      ctx.arc(bx + 250, 440, 32, 0, Math.PI * 2);
-      ctx.arc(bx + 280, 448, 26, 0, Math.PI * 2);
-      ctx.arc(bx - 30, 445, 28, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    ctx.restore();
-  }
-
-  // --- SCHOOL ENVIRONMENT (IN WORLD SPACE, BEHIND PLATFORMS) ---
+  // --- SCHOOL CAMPUS WORLD ARCHITECTURE (IN WORLD SPACE, BEHIND PLATFORMS) ---
   private drawSchoolEnvironment(levelWidth: number, time: number) {
     const ctx = this.ctx;
     const groundY = 480;
 
     ctx.save();
 
-    // 1. School Courtyard Perimeter Fence (Pagar Sekolah) along ground sections
+    // ==========================================
+    // ZONE 1: ENTRANCE PERIMETER (x: 0 to 650)
+    // ==========================================
+    // Welcome School Signboard (Plang Selamat Datang di Sekolah)
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(70, groundY - 70, 6, 70);
+    ctx.fillRect(190, groundY - 70, 6, 70);
+    ctx.fillStyle = '#0284c7';
+    ctx.fillRect(60, groundY - 100, 146, 32);
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(60, groundY - 100, 146, 32);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('SELAMAT DATANG', 133, groundY - 84);
+    ctx.font = 'bold 9px sans-serif';
+    ctx.fillStyle = '#fde047';
+    ctx.fillText('DI SEKOLAH DASAR', 133, groundY - 73);
+
+    // =========================================================================
+    // ZONE 2: GRAND SCHOOL BUILDING & MAIN COURTYARD (x: 750 to 1450)
+    // One prominent, beautiful school building with clock tower in Lapangan Utama
+    // =========================================================================
+    const bldgX = 890;
+    const bldgW = 460;
+    const bldgTop = 330;
+    const bldgH = groundY - bldgTop;
+
+    // Building Drop Shadow
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+    ctx.fillRect(bldgX - 10, groundY - 6, bldgW + 20, 6);
+
+    // Main 2-Story Classroom Building Facade (Clean ivory-white)
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(bldgX, bldgTop, bldgW, bldgH);
+
+    // Red Brick Base Trim
+    ctx.fillStyle = '#b91c1c';
+    ctx.fillRect(bldgX, groundY - 26, bldgW, 26);
+
+    // Terracotta Red Tile Roof
+    ctx.fillStyle = '#dc2626';
+    ctx.beginPath();
+    ctx.moveTo(bldgX - 18, bldgTop);
+    ctx.lineTo(bldgX + bldgW / 2, bldgTop - 45);
+    ctx.lineTo(bldgX + bldgW + 18, bldgTop);
+    ctx.closePath();
+    ctx.fill();
+
+    // Central Clock Tower (Menara Jam Sekolah)
+    const towerW = 74;
+    const towerX = bldgX + bldgW / 2 - towerW / 2;
+    const towerTop = bldgTop - 95;
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillRect(towerX, towerTop, towerW, 95);
+
+    // Tower Red Pyramid Roof
+    ctx.fillStyle = '#b91c1c';
+    ctx.beginPath();
+    ctx.moveTo(towerX - 8, towerTop);
+    ctx.lineTo(towerX + towerW / 2, towerTop - 42);
+    ctx.lineTo(towerX + towerW + 8, towerTop);
+    ctx.closePath();
+    ctx.fill();
+
+    // Tower Finial & Weather Vane
+    ctx.fillStyle = '#eab308';
+    ctx.fillRect(towerX + towerW / 2 - 1.5, towerTop - 52, 3, 10);
+    ctx.beginPath();
+    ctx.arc(towerX + towerW / 2, towerTop - 52, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Tower School Clock Face
+    const clockCX = towerX + towerW / 2;
+    const clockCY = towerTop + 38;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(clockCX, clockCY, 16, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+
+    // Clock hour markings & hands (7:00 morning bell!)
+    ctx.beginPath();
+    ctx.moveTo(clockCX, clockCY);
+    ctx.lineTo(clockCX, clockCY - 10); // 12
+    ctx.moveTo(clockCX, clockCY);
+    ctx.lineTo(clockCX - 6, clockCY + 7); // 7
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Classroom Windows (Upper & Lower Floors with pleasant morning light)
+    for (let floor = 0; floor < 2; floor++) {
+      const winY = bldgTop + 24 + floor * 54;
+      for (let wCol = 0; wCol < 8; wCol++) {
+        const winX = bldgX + 22 + wCol * 52;
+        // Skip space behind tower
+        if (winX > towerX - 25 && winX < towerX + towerW + 10) continue;
+
+        ctx.fillStyle = '#7dd3fc'; // Soft sky blue glass
+        ctx.fillRect(winX, winY, 32, 28);
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 1.2;
+        ctx.strokeRect(winX, winY, 32, 28);
+        // Window mullion divider
+        ctx.beginPath();
+        ctx.moveTo(winX + 16, winY);
+        ctx.lineTo(winX + 16, winY + 28);
+        ctx.moveTo(winX, winY + 14);
+        ctx.lineTo(winX + 32, winY + 14);
+        ctx.stroke();
+      }
+    }
+
+    // Main Entrance Pillars & Double Door
+    const entranceX = bldgX + bldgW / 2 - 30;
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(entranceX, groundY - 60, 60, 60);
+    // Door glass panels
+    ctx.fillStyle = '#0284c7';
+    ctx.fillRect(entranceX + 6, groundY - 52, 20, 36);
+    ctx.fillRect(entranceX + 34, groundY - 52, 20, 36);
+    // Pillars
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillRect(entranceX - 10, groundY - 65, 8, 65);
+    ctx.fillRect(entranceX + 62, groundY - 65, 8, 65);
+
+    // School Banner on Building: "SD NUSANTARA"
+    ctx.fillStyle = '#0369a1';
+    ctx.fillRect(bldgX + bldgW / 2 - 60, bldgTop + 8, 120, 16);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 9px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('SD NUSANTARA 01', bldgX + bldgW / 2, bldgTop + 20);
+
+    // =========================================================================
+    // ZONE 3: SCIENCE LAB & SCHOOL LIBRARY WING (x: 1600 to 2300)
+    // =========================================================================
+    const labX = 1720;
+    const labW = 440;
+    const labTop = 370;
+    ctx.fillStyle = '#f1f5f9';
+    ctx.fillRect(labX, labTop, labW, groundY - labTop);
+    // Roof
+    ctx.fillStyle = '#0369a1';
+    ctx.fillRect(labX - 10, labTop - 8, labW + 20, 10);
+    // Library / Lab Signboard
+    ctx.fillStyle = '#0284c7';
+    ctx.fillRect(labX + 20, labTop + 8, 140, 16);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 9px sans-serif';
+    ctx.fillText('PERPUSTAKAAN & LAB', labX + 90, labTop + 20);
+
+    // Big Lab windows
+    for (let lw = 0; lw < 6; lw++) {
+      const lx = labX + 30 + lw * 65;
+      ctx.fillStyle = '#93c5fd';
+      ctx.fillRect(lx, labTop + 34, 46, 50);
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(lx, labTop + 34, 46, 50);
+    }
+
+    // ==========================================
+    // PERIMETER FENCE & SHADE TREES ALONG GROUND
+    // ==========================================
     const groundSections = [
       { start: 0, end: 650 },
       { start: 750, end: 1450 },
@@ -241,34 +337,33 @@ export class GameRenderer {
     groundSections.forEach(sec => {
       // Horizontal fence rails
       ctx.fillStyle = '#e2e8f0';
-      ctx.fillRect(sec.start, groundY - 32, sec.end - sec.start, 4);
-      ctx.fillRect(sec.start, groundY - 18, sec.end - sec.start, 4);
+      ctx.fillRect(sec.start, groundY - 26, sec.end - sec.start, 3);
+      ctx.fillRect(sec.start, groundY - 14, sec.end - sec.start, 3);
 
-      // Fence posts
-      for (let fx = sec.start + 15; fx < sec.end - 10; fx += 32) {
+      // Vertical fence pickets
+      for (let fx = sec.start + 12; fx < sec.end - 8; fx += 26) {
         ctx.fillStyle = '#cbd5e1';
-        ctx.fillRect(fx, groundY - 40, 5, 40);
-        // Post pointed cap
+        ctx.fillRect(fx, groundY - 32, 4, 32);
+        // Picket pointed cap
         ctx.fillStyle = '#94a3b8';
         ctx.beginPath();
-        ctx.moveTo(fx - 1, groundY - 40);
-        ctx.lineTo(fx + 2.5, groundY - 45);
-        ctx.lineTo(fx + 6, groundY - 40);
+        ctx.moveTo(fx - 1, groundY - 32);
+        ctx.lineTo(fx + 2, groundY - 36);
+        ctx.lineTo(fx + 5, groundY - 32);
         ctx.closePath();
         ctx.fill();
       }
     });
 
-    // 2. Campus Shade Trees (Pohon Peneduh Halaman Sekolah)
-    // Placed at fixed, natural coordinates firmly rooted on groundY (480)
+    // Campus Shade Trees (Rooted on groundY)
     const trees = [
-      { x: 120, height: 110, crownR: 44 },
-      { x: 790, height: 120, crownR: 48 },
-      { x: 1390, height: 105, crownR: 42 },
-      { x: 1720, height: 115, crownR: 46 },
-      { x: 2260, height: 110, crownR: 45 },
-      { x: 2500, height: 125, crownR: 50 },
-      { x: 3100, height: 110, crownR: 44 },
+      { x: 130, height: 105, crownR: 42 },
+      { x: 790, height: 115, crownR: 46 },
+      { x: 1410, height: 110, crownR: 44 },
+      { x: 1660, height: 105, crownR: 42 },
+      { x: 2240, height: 110, crownR: 45 },
+      { x: 2490, height: 120, crownR: 48 },
+      { x: 3080, height: 110, crownR: 44 },
     ];
 
     trees.forEach((t, idx) => {
@@ -279,8 +374,8 @@ export class GameRenderer {
       // Trunk root flare
       ctx.beginPath();
       ctx.moveTo(t.x - 14, groundY);
-      ctx.lineTo(t.x - 7, groundY - 20);
-      ctx.lineTo(t.x + 7, groundY - 20);
+      ctx.lineTo(t.x - 7, groundY - 16);
+      ctx.lineTo(t.x + 7, groundY - 16);
       ctx.lineTo(t.x + 14, groundY);
       ctx.closePath();
       ctx.fill();
@@ -290,49 +385,49 @@ export class GameRenderer {
       ctx.fillStyle = idx % 2 === 0 ? '#15803d' : '#16a34a';
       ctx.beginPath();
       ctx.arc(t.x + sway, crownY, t.crownR, 0, Math.PI * 2);
-      ctx.arc(t.x - t.crownR * 0.45 + sway, crownY + 10, t.crownR * 0.75, 0, Math.PI * 2);
-      ctx.arc(t.x + t.crownR * 0.45 + sway, crownY + 12, t.crownR * 0.75, 0, Math.PI * 2);
-      ctx.arc(t.x + sway, crownY - t.crownR * 0.35, t.crownR * 0.65, 0, Math.PI * 2);
+      ctx.arc(t.x - t.crownR * 0.45 + sway, crownY + 8, t.crownR * 0.72, 0, Math.PI * 2);
+      ctx.arc(t.x + t.crownR * 0.45 + sway, crownY + 10, t.crownR * 0.72, 0, Math.PI * 2);
+      ctx.arc(t.x + sway, crownY - t.crownR * 0.35, t.crownR * 0.62, 0, Math.PI * 2);
       ctx.fill();
 
       // Canopy highlight
-      ctx.fillStyle = 'rgba(74, 222, 128, 0.35)';
+      ctx.fillStyle = 'rgba(74, 222, 128, 0.3)';
       ctx.beginPath();
       ctx.arc(t.x + sway - 6, crownY - 10, t.crownR * 0.5, 0, Math.PI * 2);
       ctx.fill();
     });
 
-    // 3. Dignified Indonesian Ceremonial Flagpoles (Tiang Bendera Merah Putih)
-    // Anchored firmly on the ground in Lapangan Upacara (x = 880) and near Gerbang Sekolah (x = 3140)
-    const flagpoles = [880, 3140];
+    // Dignified Indonesian Ceremonial Flagpoles (Tiang Bendera Merah Putih)
+    // One at Lapangan Upacara (x = 830), one at Gerbang Akhir (x = 3140)
+    const flagpoles = [830, 3140];
     flagpoles.forEach(poleX => {
       // Concrete Pedestal Base on ground
       ctx.fillStyle = '#e2e8f0';
-      ctx.fillRect(poleX - 16, groundY - 8, 32, 8);
+      ctx.fillRect(poleX - 14, groundY - 8, 28, 8);
       ctx.fillStyle = '#cbd5e1';
-      ctx.fillRect(poleX - 10, groundY - 16, 20, 8);
+      ctx.fillRect(poleX - 9, groundY - 15, 18, 7);
 
-      // Silver flagpole extending up to y = 260
-      const poleTopY = 260;
-      const poleH = groundY - 16 - poleTopY;
+      // Silver flagpole
+      const poleTopY = 270;
+      const poleH = groundY - 15 - poleTopY;
       ctx.fillStyle = '#64748b';
       ctx.fillRect(poleX - 2.5, poleTopY, 5, poleH);
 
       // Gold sphere finial on top
       ctx.fillStyle = '#eab308';
       ctx.beginPath();
-      ctx.arc(poleX, poleTopY - 3, 5, 0, Math.PI * 2);
+      ctx.arc(poleX, poleTopY - 3, 4.5, 0, Math.PI * 2);
       ctx.fill();
 
       // Sang Saka Merah Putih (Indonesian Flag) fluttering proudly
       const flutter = Math.round(Math.sin(time * 5 + poleX * 0.01) * 4);
       const flagLeft = poleX + 2.5;
-      const flagRight = flagLeft + 42;
+      const flagRight = flagLeft + 40;
       const topY1 = poleTopY + 4;
       const topY2 = topY1 + flutter;
-      const midY1 = topY1 + 14;
+      const midY1 = topY1 + 13;
       const midY2 = midY1 + flutter;
-      const botY1 = topY1 + 28;
+      const botY1 = topY1 + 26;
       const botY2 = botY1 + flutter;
 
       // Red Top
@@ -345,7 +440,7 @@ export class GameRenderer {
       ctx.closePath();
       ctx.fill();
 
-      // White Bottom (with 0.5px overlap to avoid rendering seam lines)
+      // White Bottom (with 0.5px overlap to avoid sub-pixel seam lines)
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
       ctx.moveTo(flagLeft, midY1 - 0.5);

@@ -168,6 +168,11 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    // Guarantee internal render resolution
+    canvas.width = 960;
+    canvas.height = 540;
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
@@ -323,6 +328,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       <canvas
         ref={canvasRef}
         id="game-canvas"
+        width={960}
+        height={540}
         className="max-h-full max-w-full aspect-[16/9] object-contain shadow-2xl"
       />
 
